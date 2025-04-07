@@ -32,7 +32,7 @@ if f'Attendance-{datetoday}.csv' not in os.listdir('Attendance'):
         # Matches format: Name,employee_id,In-Time,Out-Time
         f.write('Name,employee_id,In-Time,Out-Time')
 
-confidence_threshold = 0.90  # Default threshold - balanced between security and usability
+confidence_threshold = 0.95  # Default threshold - balanced between security and usability
 
 
 def totalreg():
