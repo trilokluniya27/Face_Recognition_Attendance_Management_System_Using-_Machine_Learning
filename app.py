@@ -32,7 +32,7 @@ if f'Attendance-{datetoday}.csv' not in os.listdir('Attendance'):
         # Matches format: Name,employee_id,In-Time,Out-Time
         f.write('Name,employee_id,In-Time,Out-Time')
 
-confidence_threshold = 0.95  # Default threshold - balanced between security and usability
+confidence_threshold = 0.95 # Default threshold - balanced between security and usability
 
 
 def totalreg():
@@ -114,13 +114,21 @@ def add_attendance(name):
             print("✓ Connecting to attendance server...")
             
             print("\n=== Attendance Status ===")
-            print("✓ Swipe type determined: IN-TIME")
+            print("✓ Swipe type determined: In-Time")
             print(f"✓ Employee: {username}")
-            print(f"✓ Time: {display_time}")
             
-            with open(f'Attendance/Attendance-{datetoday}.csv', 'a') as f:
-                f.write(f'\n{username},{userid},{display_time},-')
-
+            # Save attendance locally first
+            new_row = pd.DataFrame({
+                'Name': [username],
+                'employee_id': [int(userid)],
+                'In-Time': [display_time],
+                'Out-Time': ['-']
+            })
+            df = pd.concat([df, new_row], ignore_index=True)
+            df.to_csv(f'Attendance/Attendance-{datetoday}.csv', index=False)
+            print("✓ Attendance saved locally")
+            
+            # Try to sync with API
             try:
                 response = post_attendance_swipe(
                     name=username,
@@ -128,7 +136,7 @@ def add_attendance(name):
                     timestamp=iso_timestamp,
                     latitude=latitude,
                     longitude=longitude,
-                    swipe_type="IN-TIME")
+                    swipe_type="In-Time")
                 
                 print("\n=== API Response ===")
                 if isinstance(response, dict) and response.get("status") == "success":
@@ -153,12 +161,15 @@ def add_attendance(name):
                 time_diff = (current - last_time).total_seconds()
 
                 if time_diff > 30:
-                    print(f"\n=== Processing OUT-TIME for {username} ===")
+                    print(f"\n=== Processing Out-Time for {username} ===")
                     print(f"✓ Check-out recorded at {display_time}")
                     
+                    # Update local attendance first
                     df.loc[df['employee_id'] == int(userid), 'Out-Time'] = display_time
                     df.to_csv(f'Attendance/Attendance-{datetoday}.csv', index=False)
-
+                    print("✓ Check-out saved locally")
+                    
+                    # Try to sync with API
                     try:
                         response = post_attendance_swipe(
                             name=username,
@@ -166,7 +177,7 @@ def add_attendance(name):
                             timestamp=iso_timestamp,
                             latitude=latitude,
                             longitude=longitude,
-                            swipe_type="OUT-TIME")
+                            swipe_type="Out-Time")
                         
                         if isinstance(response, dict) and response.get("status") == "success":
                             print("✓ API: Check-out synced successfully")
@@ -254,6 +265,9 @@ def start():
                 print("Failed to grab frame from camera")
                 time.sleep(0.1)  # Add small delay before retrying
                 continue
+            
+            # Resize frame to match background dimensions
+            frame = cv2.resize(frame, (640, 480))
                 
             faces = extract_faces(frame)
             if len(faces) > 0:
@@ -471,3 +485,4 @@ def get_location():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
