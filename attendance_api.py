@@ -4,12 +4,12 @@ import time
 import uuid
 from datetime import datetime
 
-def post_attendance_swipe(name, employee_id, timestamp, latitude, longitude, swipe_type="IN-TIME", max_retries=3, retry_delay=2):
+def post_attendance_swipe(name, employee_id, timestamp, latitude, longitude, swipe_type="In-Time", max_retries=3, retry_delay=2):
     # Validate and format the swipe type
-    swipe_type = swipe_type.upper().strip()
-    if swipe_type not in ["IN-TIME", "OUT-TIME"]:
-        print(f"Invalid swipe type: {swipe_type}. Defaulting to IN-TIME")
-        swipe_type = "IN-TIME"
+    valid_types = ["In-Time", "Out-Time"]
+    if swipe_type not in valid_types:
+        print(f"Invalid swipe type: {swipe_type}. Defaulting to In-Time")
+        swipe_type = "In-Time"
     
     # Format timestamp to ensure it's in the correct format
     try:
@@ -25,21 +25,25 @@ def post_attendance_swipe(name, employee_id, timestamp, latitude, longitude, swi
     
     # Structure the data correctly
     data = {
-        "employee_id": str(employee_id).strip(),  # Ensure employee_id is string
-        "swip_time": formatted_timestamp,
+        "employee_id": int(employee_id),
+        "swipe_time": formatted_timestamp,
         "status": "Open",
         "primary_flag": "Y",
-        "app_id": 191,
+        "company_id": None,
+        "app_id": 1,
+        "completed_by": None,
+        "completed_date": None,
+        "cancelled_by": None,
+        "cancelled_date": None,
         "row_version": 1,
         "created": formatted_timestamp,
-        "created_by": name.strip(),
+        "created_by": name.upper(),
         "updated": formatted_timestamp,
-        "updated_by": name.strip(),
-        "swip_type": swipe_type,
-        "latitude": str(latitude),  # Ensure latitude is string
-        "longitude": str(longitude),  # Ensure longitude is string
-        "employee_name": name.strip(),
-        "unique_identifier": unique_id
+        "updated_by": name.upper(),
+        "swipe_type": swipe_type,
+        "latitude": latitude,
+        "longitude": longitude,
+        "employee_name": name
     }
 
     # Print the data being sent for debugging
@@ -58,7 +62,8 @@ def post_attendance_swipe(name, employee_id, timestamp, latitude, longitude, swi
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Accept": "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": "Basic dXNlcjpwYXNzd29yZA=="  # Basic auth with user:password
     }
 
     for attempt in range(max_retries):
